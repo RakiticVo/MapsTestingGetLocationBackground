@@ -1,0 +1,2 @@
+rootProject.name = "Google Maps Testing Location Background"
+include ':app'
