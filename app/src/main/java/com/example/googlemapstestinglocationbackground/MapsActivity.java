@@ -55,19 +55,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         receiver = new LocationBroadcastReceiver();
 
         // request location permission.
+
+
+
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                if (!locationManager.isLocationEnabled()) {
-                    buildAlertMessageNoLocation();
-                }else
-                    requestPermision();
-                startLocService();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestPermision();
+            if (!locationManager.isLocationEnabled()) {
+                buildAlertMessageNoLocation();
             }
-        } else {
+        }else {
+            requestPermision();
             startLocService();
         }
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -77,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     void startLocService() {
         IntentFilter filter = new IntentFilter("ACT_LOC");
         registerReceiver(receiver, filter);
+//        Toast.makeText(this, "registerReceiver success", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(MapsActivity.this, LocationService.class);
         startService(intent);
     }
@@ -90,9 +91,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},
                     LOCATION_REQUEST_CODE);
-            startLocService();
         } else {
             locationPermission = true;
+            startLocService();
         }
     }
 
@@ -134,6 +135,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onPause() {
         super.onPause();
         unregisterReceiver(receiver);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startLocService();
     }
 
     @Override
