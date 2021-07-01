@@ -12,6 +12,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +28,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.example.googlemapstestinglocationbackground.databinding.ActivityMapsBinding;
+
+import java.io.IOException;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -50,19 +55,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         receiver = new LocationBroadcastReceiver();
 
         // request location permission.
+
+
+
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                if (!locationManager.isLocationEnabled()) {
-                    buildAlertMessageNoLocation();
-                }else
-                    requestPermision();
-                startLocService();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestPermision();
+            if (!locationManager.isLocationEnabled()) {
+                buildAlertMessageNoLocation();
             }
-        } else {
+        }else {
+            requestPermision();
             startLocService();
         }
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -72,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     void startLocService() {
         IntentFilter filter = new IntentFilter("ACT_LOC");
         registerReceiver(receiver, filter);
+//        Toast.makeText(this, "registerReceiver success", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(MapsActivity.this, LocationService.class);
         startService(intent);
     }
@@ -85,9 +91,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},
                     LOCATION_REQUEST_CODE);
-            startLocService();
         } else {
             locationPermission = true;
+            startLocService();
         }
     }
 
@@ -132,6 +138,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        startLocService();
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         stopService(new Intent(MapsActivity.this, LocationService.class));
@@ -149,17 +161,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (intent.getAction().equals("ACT_LOC")) {
                 double lat = intent.getDoubleExtra("latitude", 0f);
                 double longitude = intent.getDoubleExtra("longitude", 0f);
+                String cityName = null;
                 if (mMap != null) {
                     LatLng latLng = new LatLng(lat, longitude);
+                    /*------- To get city name from coordinates -------- */
+                    Geocoder gcd = new Geocoder(getApplicationContext());
+                    List<Address> addresses;
+                    try {
+                        addresses = gcd.getFromLocation(lat,
+                                longitude, 1);
+                        if (addresses.size() > 0) {
+                            cityName = addresses.get(0).getLocality();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     MarkerOptions markerOptions = new MarkerOptions();
-                    markerOptions.position(latLng);
+                    markerOptions.position(latLng).title(cityName.toString());
                     if (marker != null)
                         marker.setPosition(latLng);
                     else
                         marker = mMap.addMarker(markerOptions);
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
                 }
-                Toast.makeText(context, "Latitude is: " + lat + ", Longitude is " + longitude, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Latitude is: " + lat + "\nLongitude is " + longitude + "\n" +cityName, Toast.LENGTH_SHORT).show();
             }
         }
     }
