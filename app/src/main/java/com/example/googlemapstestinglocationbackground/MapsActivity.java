@@ -12,6 +12,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +28,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.example.googlemapstestinglocationbackground.databinding.ActivityMapsBinding;
+
+import java.io.IOException;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -149,17 +154,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (intent.getAction().equals("ACT_LOC")) {
                 double lat = intent.getDoubleExtra("latitude", 0f);
                 double longitude = intent.getDoubleExtra("longitude", 0f);
+                String cityName = null;
                 if (mMap != null) {
                     LatLng latLng = new LatLng(lat, longitude);
+                    /*------- To get city name from coordinates -------- */
+                    Geocoder gcd = new Geocoder(getApplicationContext());
+                    List<Address> addresses;
+                    try {
+                        addresses = gcd.getFromLocation(lat,
+                                longitude, 1);
+                        if (addresses.size() > 0) {
+                            cityName = addresses.get(0).getLocality();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     MarkerOptions markerOptions = new MarkerOptions();
-                    markerOptions.position(latLng);
+                    markerOptions.position(latLng).title(cityName.toString());
                     if (marker != null)
                         marker.setPosition(latLng);
                     else
                         marker = mMap.addMarker(markerOptions);
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
                 }
-                Toast.makeText(context, "Latitude is: " + lat + ", Longitude is " + longitude, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Latitude is: " + lat + "\nLongitude is " + longitude + "\n" +cityName, Toast.LENGTH_SHORT).show();
             }
         }
     }
